@@ -1,0 +1,337 @@
+<UserControl x:Class="PCCare.Views.DriversView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="Transparent">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="36,24,36,34">
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="Drivers" Style="{StaticResource PageTitle}" />
+                    <TextBlock Text="Check device health and install driver updates directly from Windows Update."
+                               Style="{StaticResource BodyText}" Margin="1,6,0,0" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Style="{StaticResource SecondaryButton}" MinWidth="126" Margin="0,0,8,0"
+                            Command="{Binding Drivers.RefreshCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE72C;" FontFamily="{StaticResource IconFont}" FontSize="13"
+                                       Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                            <TextBlock Text="Refresh" Margin="7,0,0,0"
+                                       Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource PrimaryButton}" MinWidth="160"
+                            Command="{Binding Drivers.CheckUpdatesCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE895;" FontFamily="{StaticResource IconFont}" FontSize="14"
+                                       Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                            <TextBlock Text="{Binding Drivers.CheckButtonText}" Margin="8,0,0,0"
+                                       Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <Grid Margin="0,22,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Style="{StaticResource CardStyle}" Padding="20,17" Margin="0,0,10,0">
+                    <StackPanel>
+                        <TextBlock Text="DEVICES" Style="{StaticResource CaptionText}" FontSize="9" />
+                        <TextBlock Text="{Binding Drivers.DeviceCountText}" Style="{StaticResource MetricValue}"
+                                   FontSize="30" Margin="0,8,0,0" />
+                        <TextBlock Text="present devices scanned" Style="{StaticResource BodyText}"
+                                   FontSize="10.5" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Style="{StaticResource CardStyle}" Padding="20,17" Margin="5,0">
+                    <StackPanel>
+                        <TextBlock Text="ATTENTION" Style="{StaticResource CaptionText}" FontSize="9" />
+                        <TextBlock Text="{Binding Drivers.ProblemCountText}" Style="{StaticResource MetricValue}"
+                                   FontSize="30" Margin="0,8,0,0"
+                                   Foreground="{Binding Drivers.AttentionAccentHex, Converter={StaticResource HexToBrush}}" />
+                        <TextBlock Text="devices need attention" Style="{StaticResource BodyText}"
+                                   FontSize="10.5" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Style="{StaticResource CardStyle}" Padding="20,17" Margin="10,0,0,0">
+                    <StackPanel>
+                        <TextBlock Text="UPDATES" Style="{StaticResource CaptionText}" FontSize="9" />
+                        <TextBlock Text="{Binding Drivers.UpdateCountText}" Style="{StaticResource MetricValue}"
+                                   FontSize="30" Margin="0,8,0,0"
+                                   Foreground="{Binding Drivers.UpdateAccentHex, Converter={StaticResource HexToBrush}}" />
+                        <TextBlock Text="available from Microsoft Update" Style="{StaticResource BodyText}"
+                                   FontSize="10.5" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Border Style="{StaticResource CardStyle}" Margin="0,20,0,0" Padding="0">
+                <StackPanel>
+                    <Grid Margin="24,20,24,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Driver updates" Style="{StaticResource SectionTitle}" FontSize="16" />
+                            <TextBlock Text="{Binding Drivers.UpdateSummaryText}" Style="{StaticResource BodyText}"
+                                       FontSize="10.5" Margin="0,4,0,0" />
+                        </StackPanel>
+                        <Border Grid.Column="1" Style="{StaticResource PillBorder}" Padding="10,5"
+                                VerticalAlignment="Top">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="6" Height="6" Fill="{Binding Drivers.UpdateAccentHex, Converter={StaticResource HexToBrush}}"
+                                         Margin="0,0,7,0" />
+                                <TextBlock Text="WINDOWS UPDATE" Style="{StaticResource CaptionText}" FontSize="8"
+                                           Foreground="{Binding Drivers.UpdateAccentHex, Converter={StaticResource HexToBrush}}" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <Grid Margin="24,13,24,0">
+                        <TextBlock Text="{Binding Drivers.StatusText}" Style="{StaticResource BodyText}"
+                                   FontSize="10.5" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                                   ToolTip="{Binding Drivers.StatusText}" />
+                    </Grid>
+
+                    <Border Height="4" CornerRadius="2" Background="#19232E" Margin="24,10,24,0" ClipToBounds="True"
+                            Visibility="{Binding Drivers.IsBusy, Converter={StaticResource BoolToVisibility}}">
+                        <Border Width="150" HorizontalAlignment="Left" CornerRadius="2"
+                                Background="{StaticResource AccentGradient}">
+                            <Border.RenderTransform>
+                                <TranslateTransform X="-160" />
+                            </Border.RenderTransform>
+                            <Border.Triggers>
+                                <EventTrigger RoutedEvent="Loaded">
+                                    <BeginStoryboard>
+                                        <Storyboard RepeatBehavior="Forever">
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
+                                                             From="-160" To="1000" Duration="0:0:1.7" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Border.Triggers>
+                        </Border>
+                    </Border>
+
+                    <ItemsControl ItemsSource="{Binding Drivers.Updates}" Margin="0,14,0,0"
+                                  Visibility="{Binding Drivers.HasUpdates, Converter={StaticResource BoolToVisibility}}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="#19242F" BorderThickness="0,1,0,0" Padding="24,14">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="46" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Width="38" Height="38" CornerRadius="11" Background="#132333"
+                                                BorderBrush="#2A4764" BorderThickness="1" VerticalAlignment="Center">
+                                            <TextBlock Text="&#xE896;" FontFamily="{StaticResource IconFont}"
+                                                       FontSize="15" Foreground="{StaticResource BlueBrush}"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,18,0">
+                                            <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding Title}" />
+                                            <TextBlock Text="{Binding DetailsText}" Style="{StaticResource BodyText}"
+                                                       FontSize="10" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"
+                                                       ToolTip="{Binding DetailsText}" />
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Border Style="{StaticResource PillBorder}" Padding="9,4" Margin="0,0,8,0">
+                                                <TextBlock Text="{Binding SizeText}" Style="{StaticResource CaptionText}"
+                                                           FontSize="8.5" FontWeight="Normal"
+                                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                            </Border>
+                                            <Border Background="#14273A" BorderBrush="#294768" BorderThickness="1"
+                                                    CornerRadius="8" Padding="8,4">
+                                                <TextBlock Text="READY" Style="{StaticResource CaptionText}" FontSize="8"
+                                                           Foreground="{StaticResource BlueBrush}" />
+                                            </Border>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Border Padding="30,34" Visibility="{Binding Drivers.ShowNotChecked, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel HorizontalAlignment="Center">
+                            <Border Width="50" Height="50" CornerRadius="25" Background="#131D25">
+                                <TextBlock Text="&#xE895;" Style="{StaticResource IconText}" FontSize="21"
+                                           Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+                            </Border>
+                            <TextBlock Text="Check for driver updates" Style="{StaticResource SectionTitle}" FontSize="15"
+                                       HorizontalAlignment="Center" Margin="0,13,0,0" />
+                            <TextBlock Text="PC Care will ask Microsoft Update for signed drivers made for this PC."
+                                       Style="{StaticResource BodyText}" FontSize="11" TextAlignment="Center"
+                                       MaxWidth="430" HorizontalAlignment="Center" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Padding="30,34" Visibility="{Binding Drivers.ShowNoUpdates, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel HorizontalAlignment="Center">
+                            <Border Width="50" Height="50" CornerRadius="25" Background="#13231D">
+                                <TextBlock Text="&#xE73E;" Style="{StaticResource IconText}" FontSize="21"
+                                           Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+                            </Border>
+                            <TextBlock Text="Drivers are up to date" Style="{StaticResource SectionTitle}" FontSize="15"
+                                       HorizontalAlignment="Center" Margin="0,13,0,0" />
+                            <TextBlock Text="Windows Update has no newer driver packages for this PC right now."
+                                       Style="{StaticResource BodyText}" FontSize="11" TextAlignment="Center"
+                                       MaxWidth="430" HorizontalAlignment="Center" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border BorderBrush="#1B2732" BorderThickness="0,1,0,0" Padding="24,15,24,17" Margin="0,15,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Drivers come from Microsoft Update and install with Windows Update."
+                                           Style="{StaticResource BodyText}" FontSize="10.5" />
+                                <TextBlock Text="A restart may be required after installation. Wi-Fi and other devices can disconnect briefly."
+                                           Style="{StaticResource BodyText}" FontSize="10" Margin="0,3,0,0"
+                                           Foreground="{StaticResource TextMutedBrush}" />
+                                <TextBlock Text="{Binding Drivers.RebootText}" FontSize="10.5" FontWeight="SemiBold"
+                                           Foreground="{StaticResource WarningBrush}" Margin="0,6,0,0"
+                                           Visibility="{Binding Drivers.ShowRebootNotice, Converter={StaticResource BoolToVisibility}}" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Style="{StaticResource PrimaryButton}" MinWidth="176"
+                                    Command="{Binding Drivers.InstallCommand}" Margin="18,0,0,0"
+                                    VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE896;" FontFamily="{StaticResource IconFont}" FontSize="14"
+                                               Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                    <TextBlock Text="{Binding Drivers.InstallButtonText}" Margin="8,0,0,0"
+                                               Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}" Margin="0,20,0,0" Padding="0">
+                <StackPanel>
+                    <Grid Margin="24,20,24,14">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Devices needing attention" Style="{StaticResource SectionTitle}" FontSize="16" />
+                            <Border Background="#241E14" BorderBrush="#4D3B1E" BorderThickness="1" CornerRadius="10"
+                                    Padding="8,3" Margin="10,0,0,0" VerticalAlignment="Center"
+                                    Visibility="{Binding Drivers.HasProblems, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="{Binding Drivers.ProblemCountText}" Style="{StaticResource CaptionText}"
+                                           FontSize="8" Foreground="{StaticResource WarningBrush}" />
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="REPORTED BY WINDOWS" Style="{StaticResource CaptionText}" FontSize="8"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{Binding Drivers.ProblemDevices}"
+                                  Visibility="{Binding Drivers.HasProblems, Converter={StaticResource BoolToVisibility}}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="#19242F" BorderThickness="0,1,0,0" Padding="24,14">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="46" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Width="38" Height="38" CornerRadius="11" Background="#191D25"
+                                                BorderThickness="1"
+                                                BorderBrush="{Binding AccentHex, Converter={StaticResource HexToBrush}}"
+                                                VerticalAlignment="Center">
+                                            <TextBlock Text="&#xE7BA;" FontFamily="{StaticResource IconFont}"
+                                                       FontSize="16"
+                                                       Foreground="{Binding AccentHex, Converter={StaticResource HexToBrush}}"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,18,0">
+                                            <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding DeviceId}" />
+                                            <TextBlock Text="{Binding ProblemText}" Style="{StaticResource BodyText}"
+                                                       FontSize="10.5" Margin="0,3,0,0" />
+                                            <TextBlock Text="{Binding DetailsText}" Style="{StaticResource BodyText}"
+                                                       FontSize="9.5" Margin="0,2,0,0"
+                                                       Foreground="{StaticResource TextMutedBrush}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+
+                                        <Border Grid.Column="2" Background="#241E14" BorderBrush="#4D3B1E"
+                                                BorderThickness="1" CornerRadius="8" Padding="8,4"
+                                                VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding StatusText}" Style="{StaticResource CaptionText}"
+                                                       FontSize="8" Foreground="{StaticResource WarningBrush}" />
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Border Padding="30,36" Visibility="{Binding Drivers.ShowHealthyState, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel HorizontalAlignment="Center">
+                            <Border Width="50" Height="50" CornerRadius="25" Background="#13231D">
+                                <TextBlock Text="&#xE73E;" Style="{StaticResource IconText}" FontSize="21"
+                                           Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+                            </Border>
+                            <TextBlock Text="No device problems detected" Style="{StaticResource SectionTitle}" FontSize="15"
+                                       HorizontalAlignment="Center" Margin="0,13,0,0" />
+                            <TextBlock Text="Every device reported a healthy status in the latest scan."
+                                       Style="{StaticResource BodyText}" FontSize="11" HorizontalAlignment="Center"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Padding="30,36" Visibility="{Binding Drivers.HasLoaded, Converter={StaticResource InverseBoolToVisibility}}">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="Scanning devices..." Style="{StaticResource BodyText}" FontSize="12"
+                                       HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource SubtleCardStyle}" Margin="0,18,0,0" Padding="16,13">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="30" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="&#xE946;" Style="{StaticResource IconText}" FontSize="14"
+                               Foreground="{StaticResource AccentBrush}" VerticalAlignment="Top" Margin="0,1,0,0" />
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Safe driver installation" FontSize="11.5" FontWeight="SemiBold" />
+                        <TextBlock Text="PC Care only offers driver packages published through Microsoft Update. It does not download drivers from unknown websites or install unsigned packages."
+                                   Style="{StaticResource BodyText}" FontSize="10.5" Margin="0,3,0,0" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

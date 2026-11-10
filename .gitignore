@@ -1,0 +1,17 @@
+# Build output
+bin/
+obj/
+
+# Published / packaged artifacts (uploaded to GitHub Releases instead)
+publish/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+
+# OS junk
+Thumbs.db
+desktop.ini
+.DS_Store
