@@ -5,7 +5,7 @@
 ; ============================================================
 
 #define MyAppName        "PC Care"
-#define MyAppVersion     "1.3.0"
+#define MyAppVersion     "1.3.1"
 #define MyAppPublisher   "PC Care"
 #define MyAppExeName     "PC Care.exe"
 #define MyAppId          "{{8A1B2C3D-4E5F-6A7B-8C9D-0E1F2A3B4C5D}"
@@ -53,5 +53,5 @@ Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
-Filename: "{app}\{#MyAppExeName}"; Flags: nowait; Check: WizardSilent
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent shellexec
+Filename: "{app}\{#MyAppExeName}"; Flags: nowait shellexec; Check: WizardSilent

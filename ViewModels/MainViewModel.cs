@@ -139,7 +139,7 @@ public sealed class MainViewModel : ObservableObject
 
     public string Greeting { get; }
     public string TodayText { get; }
-    public string AppVersion => "Version 1.3.0";
+    public string AppVersion => "Version 1.3.1";
 
     public bool IsElevated
     {

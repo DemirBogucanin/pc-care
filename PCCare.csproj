@@ -10,8 +10,8 @@
     <AssemblyName>PC Care</AssemblyName>
     <ApplicationIcon>Assets\PCCare.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>1.3.0</Version>
-    <FileVersion>1.3.0.0</FileVersion>
+    <Version>1.3.1</Version>
+    <FileVersion>1.3.1.0</FileVersion>
     <Product>PC Care</Product>
     <AssemblyTitle>PC Care</AssemblyTitle>
     <Description>PC Care - a safe, modern Windows optimization tool.</Description>
