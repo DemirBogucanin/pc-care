@@ -1,5 +1,12 @@
 namespace PCCare.Models;
 
+public enum CleanupKind
+{
+    Files,
+    RecycleBin,
+    SearchIndex
+}
+
 public sealed class CleanupDefinition
 {
     public required string Id { get; init; }
@@ -13,4 +20,5 @@ public sealed class CleanupDefinition
     public TimeSpan MinimumAge { get; init; } = TimeSpan.Zero;
     public bool SelectedByDefault { get; init; } = true;
     public bool RequiresAdministrator { get; init; }
+    public CleanupKind Kind { get; init; } = CleanupKind.Files;
 }

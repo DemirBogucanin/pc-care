@@ -51,6 +51,7 @@ public sealed class MainViewModel : ObservableObject
         };
         Cleaner.CleanupCompleted += OnCleanupCompleted;
         Cleaner.Failed += (_, message) => ShowToast(message, true);
+        Cleaner.Notified += (_, message) => ShowToast(message, false);
         Cleaner.PropertyChanged += (_, args) =>
         {
             if (args.PropertyName is nameof(CleanerViewModel.IsBusy) or
@@ -133,7 +134,7 @@ public sealed class MainViewModel : ObservableObject
 
     public string Greeting { get; }
     public string TodayText { get; }
-    public string AppVersion => "Version 1.1.0";
+    public string AppVersion => "Version 1.2.0";
 
     public bool IsElevated
     {

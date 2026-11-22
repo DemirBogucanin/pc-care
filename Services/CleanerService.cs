@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using PCCare.Models;
 
 namespace PCCare.Services;
@@ -22,7 +24,9 @@ public sealed class CleanerService
             Path.Combine(LocalAppData, @"Microsoft\Windows\WER\ReportArchive"),
             Path.Combine(LocalAppData, @"Microsoft\Windows\WER\ReportQueue"),
             Path.Combine(ProgramData, @"Microsoft\Windows\WER\ReportArchive"),
-            Path.Combine(ProgramData, @"Microsoft\Windows\WER\ReportQueue")
+            Path.Combine(ProgramData, @"Microsoft\Windows\WER\ReportQueue"),
+            Path.Combine(WindowsFolder, "MEMORY.DMP"),
+            Path.Combine(WindowsFolder, "Minidump")
         };
 
         return
@@ -104,14 +108,52 @@ public sealed class CleanerService
                 Recursive = true,
                 MinimumAge = TimeSpan.FromDays(1),
                 RequiresAdministrator = true
+            },
+            new CleanupDefinition
+            {
+                Id = "recycle-bin",
+                Name = "Recycle Bin",
+                Description = "Permanently removes files you already deleted on every fixed drive. They cannot be restored afterwards.",
+                Glyph = "\uE74D",
+                AccentHex = "#F08A96",
+                Paths = [],
+                Kind = CleanupKind.RecycleBin,
+                SelectedByDefault = false
+            },
+            new CleanupDefinition
+            {
+                Id = "delivery-optimization",
+                Name = "Delivery Optimization cache",
+                Description = "Update packages kept for sharing with other PCs. Windows downloads them again when needed.",
+                Glyph = "\uE896",
+                AccentHex = "#7FB0FF",
+                Paths = [Path.Combine(WindowsFolder, @"SoftwareDistribution\DeliveryOptimization")],
+                Recursive = true,
+                RequiresAdministrator = true
+            },
+            new CleanupDefinition
+            {
+                Id = "search-index",
+                Name = "Windows Search index",
+                Description = "Deletes the search database so Windows rebuilds a fresh, smaller one. Indexing continues in the background.",
+                Glyph = "\uE721",
+                AccentHex = "#B795FF",
+                Paths = [Path.Combine(ProgramData, @"Microsoft\Search\Data\Applications\Windows")],
+                Kind = CleanupKind.SearchIndex,
+                SelectedByDefault = false,
+                RequiresAdministrator = true
             }
         ];
     }
 
     public CleanupScanResult ScanCategory(CleanupDefinition definition, CancellationToken cancellationToken = default)
     {
-        var files = CollectCandidates(definition, cancellationToken);
-        return new CleanupScanResult(files.Sum(file => file.Length), files.Count);
+        return definition.Kind switch
+        {
+            CleanupKind.RecycleBin => ScanRecycleBin(cancellationToken),
+            CleanupKind.SearchIndex => ScanSearchIndex(definition, cancellationToken),
+            _ => ScanFiles(definition, cancellationToken)
+        };
     }
 
     public CleanupCategoryResult CleanCategory(
@@ -121,6 +163,49 @@ public sealed class CleanerService
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+
+        return definition.Kind switch
+        {
+            CleanupKind.RecycleBin => EmptyRecycleBin(scanned, progress, cancellationToken),
+            CleanupKind.SearchIndex => RebuildSearchIndex(definition, scanned, progress, cancellationToken),
+            _ => CleanFiles(definition, scanned, progress, cancellationToken)
+        };
+    }
+
+    public bool FlushDns()
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = Path.Combine(Environment.SystemDirectory, "ipconfig.exe"),
+                Arguments = "/flushdns",
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                WindowStyle = ProcessWindowStyle.Hidden
+            };
+
+            using var process = Process.Start(startInfo);
+            return process is not null && process.WaitForExit(15_000) && process.ExitCode == 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static CleanupScanResult ScanFiles(CleanupDefinition definition, CancellationToken cancellationToken)
+    {
+        var files = CollectCandidates(definition, cancellationToken);
+        return new CleanupScanResult(files.Sum(file => file.Length), files.Count);
+    }
+
+    private static CleanupCategoryResult CleanFiles(
+        CleanupDefinition definition,
+        CleanupScanResult scanned,
+        IProgress<CleanupProgress>? progress,
+        CancellationToken cancellationToken)
+    {
         var files = CollectCandidates(definition, cancellationToken);
         long freedBytes = 0;
         var deletedCount = 0;
@@ -170,6 +255,312 @@ public sealed class CleanerService
         return new CleanupCategoryResult(freedBytes, deletedCount, remainingBytes, remainingCount);
     }
 
+    private static IReadOnlyList<string> GetFixedDriveRoots()
+    {
+        var roots = new List<string>();
+
+        foreach (var drive in DriveInfo.GetDrives())
+        {
+            try
+            {
+                if (drive.DriveType == DriveType.Fixed && drive.IsReady)
+                {
+                    roots.Add(drive.RootDirectory.FullName);
+                }
+            }
+            catch
+            {
+                // A drive can disappear while the list is being built.
+            }
+        }
+
+        return roots;
+    }
+
+    private static CleanupScanResult ScanRecycleBin(CancellationToken cancellationToken)
+    {
+        long size = 0;
+        var items = 0;
+
+        foreach (var root in GetFixedDriveRoots())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var info = QueryRecycleBin(root);
+            size += info.SizeBytes;
+            items += info.ItemCount;
+        }
+
+        return new CleanupScanResult(size, items);
+    }
+
+    private static CleanupCategoryResult EmptyRecycleBin(
+        CleanupScanResult scanned,
+        IProgress<CleanupProgress>? progress,
+        CancellationToken cancellationToken)
+    {
+        var roots = GetFixedDriveRoots();
+        long freedBytes = 0;
+        var deletedCount = 0;
+
+        for (var index = 0; index < roots.Count; index++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var root = roots[index];
+            progress?.Report(new CleanupProgress(
+                roots.Count == 0 ? 100 : (index + 1) * 100.0 / roots.Count,
+                $"Emptying Recycle Bin on {root.TrimEnd(Path.DirectorySeparatorChar)}...",
+                freedBytes,
+                deletedCount));
+
+            var before = QueryRecycleBin(root);
+            if (before.SizeBytes <= 0 && before.ItemCount <= 0)
+            {
+                continue;
+            }
+
+            try
+            {
+                // SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND
+                if (SHEmptyRecycleBin(IntPtr.Zero, root, 0x7) == 0)
+                {
+                    freedBytes += before.SizeBytes;
+                    deletedCount += before.ItemCount;
+                }
+            }
+            catch
+            {
+                // The Recycle Bin is busy; leave it untouched.
+            }
+        }
+
+        progress?.Report(new CleanupProgress(100, "Recycle Bin emptied", freedBytes, deletedCount));
+
+        var remainingBytes = Math.Max(0, scanned.SizeBytes - freedBytes);
+        var remainingCount = Math.Max(0, scanned.ItemCount - deletedCount);
+        return new CleanupCategoryResult(freedBytes, deletedCount, remainingBytes, remainingCount);
+    }
+
+    private static (long SizeBytes, int ItemCount) QueryRecycleBin(string root)
+    {
+        try
+        {
+            var info = new SHQUERYRBINFO { cbSize = (uint)Marshal.SizeOf<SHQUERYRBINFO>() };
+            if (SHQueryRecycleBin(root, ref info) == 0 && info.i64Size > 0)
+            {
+                return (info.i64Size, (int)Math.Min(int.MaxValue, info.i64NumItems));
+            }
+        }
+        catch
+        {
+            // No Recycle Bin on this volume or access was denied.
+        }
+
+        return (0, 0);
+    }
+
+    private static CleanupScanResult ScanSearchIndex(
+        CleanupDefinition definition,
+        CancellationToken cancellationToken)
+    {
+        long size = 0;
+        var count = 0;
+
+        foreach (var file in GetSearchIndexFiles(definition))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                var info = new FileInfo(file);
+                if (info.Exists)
+                {
+                    size += info.Length;
+                    count++;
+                }
+            }
+            catch
+            {
+                // The index file may be locked or disappear during the scan.
+            }
+        }
+
+        return new CleanupScanResult(size, count);
+    }
+
+    private static CleanupCategoryResult RebuildSearchIndex(
+        CleanupDefinition definition,
+        CleanupScanResult scanned,
+        IProgress<CleanupProgress>? progress,
+        CancellationToken cancellationToken)
+    {
+        var files = GetSearchIndexFiles(definition);
+        if (files.Count == 0)
+        {
+            progress?.Report(new CleanupProgress(100, "Search index is already compact"));
+            return new CleanupCategoryResult(0, 0, 0, 0);
+        }
+
+        progress?.Report(new CleanupProgress(5, "Stopping Windows Search to release the index..."));
+        var serviceStopped = false;
+        long freedBytes = 0;
+        var deletedCount = 0;
+
+        try
+        {
+            for (var index = 0; index < files.Count; index++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var file = files[index];
+
+                long length;
+                try
+                {
+                    length = new FileInfo(file).Length;
+                }
+                catch
+                {
+                    length = 0;
+                }
+
+                var removed = TryDeleteFile(file);
+                if (!removed && !serviceStopped)
+                {
+                    serviceStopped = RunServiceCommand("stop WSearch");
+                    Thread.Sleep(1500);
+                    removed = TryDeleteFile(file);
+                }
+
+                if (removed)
+                {
+                    freedBytes += length;
+                    deletedCount++;
+                }
+
+                progress?.Report(new CleanupProgress(
+                    10 + (index + 1) * 80.0 / files.Count,
+                    "Rebuilding the Windows Search index...",
+                    freedBytes,
+                    deletedCount));
+            }
+        }
+        finally
+        {
+            if (serviceStopped)
+            {
+                progress?.Report(new CleanupProgress(95, "Restarting Windows Search...", freedBytes, deletedCount));
+                RunServiceCommand("start WSearch");
+            }
+        }
+
+        progress?.Report(new CleanupProgress(
+            100,
+            deletedCount > 0
+                ? "Search index will rebuild in the background"
+                : "Search index could not be released",
+            freedBytes,
+            deletedCount));
+
+        var remainingBytes = Math.Max(0, scanned.SizeBytes - freedBytes);
+        var remainingCount = Math.Max(0, scanned.ItemCount - deletedCount);
+        return new CleanupCategoryResult(freedBytes, deletedCount, remainingBytes, remainingCount);
+    }
+
+    private static IReadOnlyList<string> GetSearchIndexFiles(CleanupDefinition definition)
+    {
+        var files = new List<string>();
+
+        foreach (var root in definition.Paths)
+        {
+            try
+            {
+                if (!Directory.Exists(root))
+                {
+                    continue;
+                }
+
+                foreach (var file in Directory.EnumerateFiles(root, "Windows.*"))
+                {
+                    var extension = Path.GetExtension(file);
+                    if (extension.Equals(".edb", StringComparison.OrdinalIgnoreCase) ||
+                        extension.Equals(".db", StringComparison.OrdinalIgnoreCase))
+                    {
+                        files.Add(file);
+                    }
+                }
+            }
+            catch
+            {
+                // The index folder can be protected while Windows Search runs.
+            }
+        }
+
+        return files;
+    }
+
+    private static bool TryDeleteFile(string path)
+    {
+        try
+        {
+            if (!File.Exists(path))
+            {
+                return true;
+            }
+
+            var attributes = File.GetAttributes(path);
+            if ((attributes & FileAttributes.ReadOnly) != 0)
+            {
+                File.SetAttributes(path, attributes & ~FileAttributes.ReadOnly);
+            }
+
+            File.Delete(path);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool RunServiceCommand(string arguments)
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = Path.Combine(Environment.SystemDirectory, "net.exe"),
+                Arguments = arguments,
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                WindowStyle = ProcessWindowStyle.Hidden
+            };
+
+            using var process = Process.Start(startInfo);
+            if (process is null)
+            {
+                return false;
+            }
+
+            if (!process.WaitForExit(120_000))
+            {
+                try
+                {
+                    process.Kill(true);
+                }
+                catch
+                {
+                    // The process already exited.
+                }
+
+                return false;
+            }
+
+            return process.ExitCode == 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private static List<CandidateFile> CollectCandidates(
         CleanupDefinition definition,
         CancellationToken cancellationToken)
@@ -204,6 +595,27 @@ public sealed class CleanerService
             }
             catch
             {
+                continue;
+            }
+
+            if (File.Exists(root))
+            {
+                if (IsSafeFile(root, root, protectedRoots, definition, minimumDate))
+                {
+                    try
+                    {
+                        var info = new FileInfo(root);
+                        if (info.Exists)
+                        {
+                            result.Add(new CandidateFile(info.FullName, info.Length));
+                        }
+                    }
+                    catch
+                    {
+                        // The file may disappear while scanning.
+                    }
+                }
+
                 continue;
             }
 
@@ -450,4 +862,18 @@ public sealed class CleanerService
     }
 
     private sealed record CandidateFile(string Path, long Length);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct SHQUERYRBINFO
+    {
+        public uint cbSize;
+        public long i64Size;
+        public long i64NumItems;
+    }
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern int SHQueryRecycleBin(string? pszRootPath, ref SHQUERYRBINFO pSHQueryRBInfo);
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern int SHEmptyRecycleBin(IntPtr hwnd, string? pszRootPath, uint dwFlags);
 }

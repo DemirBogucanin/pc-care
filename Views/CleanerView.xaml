@@ -50,6 +50,9 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="Flush DNS" Style="{StaticResource GhostButton}"
+                                Command="{Binding Cleaner.FlushDnsCommand}" Margin="0,0,10,0"
+                                ToolTip="Clears the DNS resolver cache. Useful when websites do not load." />
                         <Button Content="Scan again" Style="{StaticResource SecondaryButton}"
                                 Command="{Binding Cleaner.ScanCommand}" Margin="0,0,10,0" MinWidth="116" />
                         <Button Style="{StaticResource PrimaryButton}" Command="{Binding Cleaner.CleanCommand}"

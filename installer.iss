@@ -5,7 +5,7 @@
 ; ============================================================
 
 #define MyAppName        "PC Care"
-#define MyAppVersion     "1.1.0"
+#define MyAppVersion     "1.2.0"
 #define MyAppPublisher   "PC Care"
 #define MyAppExeName     "PC Care.exe"
 #define MyAppId          "{{8A1B2C3D-4E5F-6A7B-8C9D-0E1F2A3B4C5D}"

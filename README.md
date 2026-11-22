@@ -4,7 +4,7 @@ A safe, modern Windows optimization tool built with WPF on .NET 8.
 
 ## Features
 
-- **Cleaner** — removes temporary files, Windows Update cache and other junk safely.
+- **Cleaner** — removes temporary files, Windows Update cache, Delivery Optimization cache, crash dumps and other junk safely. Includes a Recycle Bin option, a Windows Search index rebuild and a one-click DNS flush.
 - **Startup** — review and manage programs that start with Windows.
 - **Performance** — quick system health overview and tuning.
 - **Drivers** — checks for driver updates through Windows Update and installs them.

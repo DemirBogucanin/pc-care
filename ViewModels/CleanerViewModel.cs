@@ -41,6 +41,7 @@ public sealed class CleanerViewModel : ObservableObject
         CleanCommand = new AsyncRelayCommand(
             () => CleanSelectedAsync("cleaner"),
             () => !IsBusy && Categories.Any(category => category.IsSelected));
+        FlushDnsCommand = new AsyncRelayCommand(FlushDnsAsync, () => !IsBusy);
         SelectAllCommand = new RelayCommand(SelectAll, () => !IsBusy);
         ClearSelectionCommand = new RelayCommand(ClearSelection, () => !IsBusy);
     }
@@ -48,12 +49,14 @@ public sealed class CleanerViewModel : ObservableObject
     public ObservableCollection<CleanupCategory> Categories { get; } = [];
     public AsyncRelayCommand ScanCommand { get; }
     public AsyncRelayCommand CleanCommand { get; }
+    public AsyncRelayCommand FlushDnsCommand { get; }
     public RelayCommand SelectAllCommand { get; }
     public RelayCommand ClearSelectionCommand { get; }
 
     public event EventHandler? ScanCompleted;
     public event EventHandler<CleanupCompletedEventArgs>? CleanupCompleted;
     public event EventHandler<string>? Failed;
+    public event EventHandler<string>? Notified;
 
     public bool IsScanning
     {
@@ -316,6 +319,39 @@ public sealed class CleanerViewModel : ObservableObject
         }
     }
 
+    private async Task FlushDnsAsync()
+    {
+        if (IsBusy)
+        {
+            return;
+        }
+
+        IsScanning = true;
+        StatusText = "Flushing the DNS cache...";
+        Progress = 0;
+
+        try
+        {
+            var flushed = await Task.Run(_cleanerService.FlushDns);
+            Progress = 100;
+
+            if (flushed)
+            {
+                StatusText = "DNS cache flushed";
+                Notified?.Invoke(this, "DNS cache flushed. Website addresses will be resolved fresh.");
+            }
+            else
+            {
+                StatusText = "DNS cache could not be flushed";
+                Failed?.Invoke(this, "Windows could not flush the DNS cache.");
+            }
+        }
+        finally
+        {
+            IsScanning = false;
+        }
+    }
+
     private void SelectAll()
     {
         foreach (var category in Categories)
@@ -352,6 +388,7 @@ public sealed class CleanerViewModel : ObservableObject
     {
         ScanCommand.RaiseCanExecuteChanged();
         CleanCommand.RaiseCanExecuteChanged();
+        FlushDnsCommand.RaiseCanExecuteChanged();
         SelectAllCommand.RaiseCanExecuteChanged();
         ClearSelectionCommand.RaiseCanExecuteChanged();
     }
