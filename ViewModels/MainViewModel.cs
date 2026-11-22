@@ -30,6 +30,7 @@ public sealed class MainViewModel : ObservableObject
         Startup = new StartupViewModel(startupService);
         Drivers = new DriversViewModel(driverService);
         Performance = new PerformanceViewModel(performanceService);
+        Update = new UpdateViewModel();
 
         NavigateCommand = new RelayCommand(parameter =>
         {
@@ -98,6 +99,9 @@ public sealed class MainViewModel : ObservableObject
             OnPropertyChanged(nameof(StorageFreePercentText));
         };
 
+        Update.Notified += (_, message) => ShowToast(message, false);
+        Update.Failed += (_, message) => ShowToast(message, true);
+
         Greeting = GetGreeting();
         TodayText = DateTime.Now.ToString("dddd, MMMM d");
         UpdateHealth();
@@ -107,6 +111,7 @@ public sealed class MainViewModel : ObservableObject
     public StartupViewModel Startup { get; }
     public DriversViewModel Drivers { get; }
     public PerformanceViewModel Performance { get; }
+    public UpdateViewModel Update { get; }
     public RelayCommand NavigateCommand { get; }
     public AsyncRelayCommand OptimizeCommand { get; }
 
@@ -134,7 +139,7 @@ public sealed class MainViewModel : ObservableObject
 
     public string Greeting { get; }
     public string TodayText { get; }
-    public string AppVersion => "Version 1.2.0";
+    public string AppVersion => "Version 1.3.0";
 
     public bool IsElevated
     {
@@ -239,6 +244,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         UpdateHealth();
+        _ = Update.CheckOnStartupAsync();
     }
 
     public void Stop()

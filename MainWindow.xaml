@@ -216,6 +216,12 @@
                         </Border>
                         <TextBlock Text="{Binding AppVersion}" Style="{StaticResource CaptionText}"
                                    HorizontalAlignment="Center" FontWeight="Normal" />
+                        <Button Content="{Binding Update.CheckLinkText}"
+                                Command="{Binding Update.CheckCommand}"
+                                IsEnabled="{Binding Update.CheckLinkEnabled}"
+                                Style="{StaticResource GhostButton}" HorizontalAlignment="Center"
+                                FontSize="10" Padding="10,4" Margin="0,6,0,0"
+                                ToolTip="Check GitHub for a newer version" />
                     </StackPanel>
                 </Grid>
             </Border>
@@ -283,6 +289,46 @@
                     </ContentControl>
                 </Border>
             </Grid>
+
+            <!-- Update banner -->
+            <Border Grid.Column="1" Panel.ZIndex="15"
+                    HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                    Margin="28,0,0,26" MaxWidth="520" CornerRadius="14"
+                    Background="#111C25" BorderBrush="#28425C" BorderThickness="1" Padding="16,14"
+                    Visibility="{Binding Update.IsBannerVisible, Converter={StaticResource BoolToVisibility}}"
+                    ToolTip="{Binding Update.NotesToolTip}">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="28" ShadowDepth="8" Opacity="0.35" Color="#000000" />
+                </Border.Effect>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="34" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Width="28" Height="28" CornerRadius="14" Background="#16283A" VerticalAlignment="Top">
+                        <TextBlock Text="&#xE896;" Style="{StaticResource IconText}" FontSize="14"
+                                   Foreground="{StaticResource AccentBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+
+                    <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                        <TextBlock Text="{Binding Update.Title}" FontSize="12.5" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Update.Message}" Style="{StaticResource BodyText}"
+                                   FontSize="10.5" Margin="0,3,0,0" TextWrapping="Wrap" />
+                        <ProgressBar Style="{StaticResource SlimProgressBar}" Margin="0,9,0,0" Height="4"
+                                     Value="{Binding Update.Progress, Mode=OneWay}"
+                                     Visibility="{Binding Update.IsProgressVisible, Converter={StaticResource BoolToVisibility}}" />
+                        <StackPanel Orientation="Horizontal" Margin="0,11,0,0">
+                            <Button Content="{Binding Update.PrimaryText}" Style="{StaticResource PrimaryButton}"
+                                    Command="{Binding Update.InstallCommand}" Height="34" MinWidth="132" />
+                            <Button Content="Later" Style="{StaticResource GhostButton}"
+                                    Command="{Binding Update.DismissCommand}" Margin="8,0,0,0" Height="34"
+                                    Visibility="{Binding Update.IsProgressVisible, Converter={StaticResource InverseBoolToVisibility}}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
 
             <!-- Toast -->
             <Border Grid.Column="1" Panel.ZIndex="20" HorizontalAlignment="Right" VerticalAlignment="Bottom"

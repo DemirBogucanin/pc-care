@@ -5,7 +5,7 @@
 ; ============================================================
 
 #define MyAppName        "PC Care"
-#define MyAppVersion     "1.2.0"
+#define MyAppVersion     "1.3.0"
 #define MyAppPublisher   "PC Care"
 #define MyAppExeName     "PC Care.exe"
 #define MyAppId          "{{8A1B2C3D-4E5F-6A7B-8C9D-0E1F2A3B4C5D}"
@@ -31,6 +31,8 @@ WizardStyle=modern
 PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
+CloseApplications=yes
+RestartApplications=no
 SetupIconFile=Assets\PCCare.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 UninstallDisplayName={#MyAppName}
@@ -52,3 +54,4 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Flags: nowait; Check: WizardSilent

@@ -8,6 +8,7 @@ A safe, modern Windows optimization tool built with WPF on .NET 8.
 - **Startup** — review and manage programs that start with Windows.
 - **Performance** — quick system health overview and tuning.
 - **Drivers** — checks for driver updates through Windows Update and installs them.
+- **Automatic updates** — checks GitHub once a day, downloads the new installer, verifies its SHA-256 hash and restarts the app after a silent in-place upgrade.
 
 ## Requirements
 
